@@ -1,0 +1,46 @@
+{
+    "name": "@telegramium/grammy-channel-verification",
+    "version": "1.0.8",
+    "description": "Channel verification for grammY Telegram bots",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "tsc",
+        "prepublishOnly": "pnpm run build",
+        "test": "vitest run"
+    },
+    "keywords": [
+        "grammy",
+        "telegram",
+        "bot",
+        "channel",
+        "verification",
+        "flyer",
+        "subgram"
+    ],
+    "author": "Telegramium",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/telegramium/grammy-channel-verification.git"
+    },
+    "bugs": {
+        "url": "https://github.com/telegramium/grammy-channel-verification/issues"
+    },
+    "homepage": "https://github.com/telegramium/grammy-channel-verification#readme",
+    "publishConfig": {
+        "access": "public"
+    },
+    "devDependencies": {
+        "@types/node": "^24.10.3",
+        "@vitest/ui": "^4.0.15",
+        "grammy": "^1.38.4",
+        "prettier": "^3.7.4",
+        "typescript": "^5.9.3",
+        "vitest": "^4.0.15"
+    },
+    "packageManager": "pnpm@10.25.0+sha512.5e82639027af37cf832061bcc6d639c219634488e0f2baebe785028a793de7b525ffcd3f7ff574f5e9860654e098fe852ba8ac5dd5cefe1767d23a020a92f501"
+}
