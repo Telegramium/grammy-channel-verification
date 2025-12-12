@@ -284,9 +284,7 @@ export class TaskChecker<C extends Context = Context> implements Checker<C> {
                 // Show uncompleted and alwaysShow tasks in keyboard
                 const t = getTranslation(ctx.from?.language_code);
                 const keyboard = TaskChecker.generateKeyboard(tasksToShow, ctx);
-
-                const count = tasksToShow.length;
-                const text = t.promptText(count);
+                const text = t.promptText(tasksToShow.length);
 
                 await ctx.reply(text, {
                     parse_mode: 'HTML',
@@ -294,7 +292,7 @@ export class TaskChecker<C extends Context = Context> implements Checker<C> {
                 });
             }
             // Return uncompleted tasks (alwaysShow tasks don't block verification)
-            return { ok: false, tasks: uncompletedTasks };
+            return { ok: false, tasks: tasksToShow };
         }
 
         return { ok: true, tasks: this.tasks };
