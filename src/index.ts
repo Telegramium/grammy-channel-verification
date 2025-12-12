@@ -9,7 +9,10 @@ import {
 export { MemoryCache } from './cache/memory';
 export { RedisCache } from './cache/redis';
 export { FlyerChecker } from './checkers/flyer';
-export { BotTask, ChannelTask, CustomTask, TaskChecker } from './checkers/tasks';
+export { TaskChecker } from './checkers/tasks';
+export { BotTask } from './checkers/tasks/bot';
+export { ChannelTask } from './checkers/tasks/channel';
+export { CustomTask } from './checkers/tasks/custom';
 export { getTranslation, t } from './i18n';
 export * from './types';
 export type { Task } from './types';
