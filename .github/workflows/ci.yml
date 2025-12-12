@@ -43,17 +43,6 @@ jobs:
               with:
                   fetch-depth: 0
 
-            - name: Check if [publish] in commit message
-              id: force_publish
-              run: |
-                  if echo "${{ github.event.head_commit.message }}" | grep -q "\[publish\]"; then
-                    echo "should_publish=true" >> $GITHUB_OUTPUT
-                    echo "[publish] found in commit message, will force publish"
-                  else
-                    echo "should_publish=false" >> $GITHUB_OUTPUT
-                    echo "[publish] not found in commit message"
-                  fi
-
             - name: Check if package.json changed
               id: check_changes
               run: |
@@ -66,7 +55,7 @@ jobs:
                   fi
 
             - name: Get version from package.json
-              if: steps.check_changes.outputs.changed == 'true' || steps.force_publish.outputs.should_publish == 'true'
+              if: steps.check_changes.outputs.changed == 'true'
               id: package_version
               run: |
                   VERSION=$(node -p "require('./package.json').version")
@@ -74,7 +63,7 @@ jobs:
                   echo "Detected version: $VERSION"
 
             - name: Check if tag exists
-              if: steps.check_changes.outputs.changed == 'true' || steps.force_publish.outputs.should_publish == 'true'
+              if: steps.check_changes.outputs.changed == 'true'
               id: check_tag
               run: |
                   TAG="v${{ steps.package_version.outputs.version }}"
@@ -87,7 +76,7 @@ jobs:
                   fi
 
             - name: Create Git tag
-              if: (steps.check_changes.outputs.changed == 'true' || steps.force_publish.outputs.should_publish == 'true') && steps.check_tag.outputs.exists == 'false'
+              if: steps.check_changes.outputs.changed == 'true' && steps.check_tag.outputs.exists == 'false'
               run: |
                   git config user.name "github-actions[bot]"
                   git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -95,7 +84,7 @@ jobs:
                   git push origin "v${{ steps.package_version.outputs.version }}"
 
             - name: Create GitHub Release
-              if: (steps.check_changes.outputs.changed == 'true' || steps.force_publish.outputs.should_publish == 'true') && steps.check_tag.outputs.exists == 'false'
+              if: steps.check_changes.outputs.changed == 'true' && steps.check_tag.outputs.exists == 'false'
               uses: softprops/action-gh-release@v1
               with:
                   tag_name: v${{ steps.package_version.outputs.version }}
@@ -105,24 +94,24 @@ jobs:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
             - name: Setup pnpm for Publish
-              if: (steps.check_changes.outputs.changed == 'true' || steps.force_publish.outputs.should_publish == 'true') && steps.check_tag.outputs.exists == 'false'
+              if: steps.check_changes.outputs.changed == 'true' && steps.check_tag.outputs.exists == 'false'
               uses: pnpm/action-setup@v4
 
             - name: Use Node.js for Publish
-              if: (steps.check_changes.outputs.changed == 'true' || steps.force_publish.outputs.should_publish == 'true') && steps.check_tag.outputs.exists == 'false'
+              if: steps.check_changes.outputs.changed == 'true' && steps.check_tag.outputs.exists == 'false'
               uses: actions/setup-node@v6
               with:
                   registry-url: 'https://registry.npmjs.org'
                   cache: 'pnpm'
 
             - name: Install dependencies for Publish
-              if: (steps.check_changes.outputs.changed == 'true' || steps.force_publish.outputs.should_publish == 'true') && steps.check_tag.outputs.exists == 'false'
+              if: steps.check_changes.outputs.changed == 'true' && steps.check_tag.outputs.exists == 'false'
               run: pnpm install --frozen-lockfile
 
             - name: Build for Publish
-              if: (steps.check_changes.outputs.changed == 'true' || steps.force_publish.outputs.should_publish == 'true') && steps.check_tag.outputs.exists == 'false'
+              if: steps.check_changes.outputs.changed == 'true' && steps.check_tag.outputs.exists == 'false'
               run: pnpm run build
 
             - name: Publish to NPM
-              if: (steps.check_changes.outputs.changed == 'true' || steps.force_publish.outputs.should_publish == 'true') && steps.check_tag.outputs.exists == 'false'
+              if: steps.check_changes.outputs.changed == 'true' && steps.check_tag.outputs.exists == 'false'
               run: npm publish --provenance --access public
