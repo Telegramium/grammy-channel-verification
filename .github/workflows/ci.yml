@@ -112,4 +112,4 @@ jobs:
 
             - name: Publish to NPM
               if: steps.check_changes.outputs.changed == 'true' && steps.check_tag.outputs.exists == 'false'
-              run: pnpm publish --access public --provenance
+              run: pnpm publish --provenance

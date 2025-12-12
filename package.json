@@ -1,6 +1,6 @@
 {
     "name": "@telegramium/grammy-channel-verification",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "description": "Channel verification for grammY Telegram bots. Supports different task types and caching.",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -26,7 +26,7 @@
     "license": "MIT",
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/telegramium/grammy-channel-verification.git"
+        "url": "https://github.com/Telegramium/grammy-channel-verification"
     },
     "bugs": {
         "url": "https://github.com/telegramium/grammy-channel-verification/issues"
