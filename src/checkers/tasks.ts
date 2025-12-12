@@ -292,7 +292,7 @@ export class TaskChecker<C extends Context = Context> implements Checker<C> {
                 });
             }
             // Return uncompleted tasks (alwaysShow tasks don't block verification)
-            return { ok: false, tasks: tasksToShow };
+            return { ok: false, tasks: uncompletedTasks };
         }
 
         return { ok: true, tasks: this.tasks };
