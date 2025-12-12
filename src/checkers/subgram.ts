@@ -4,7 +4,7 @@ import type { CheckResult, Checker, Task } from '../types';
 import { TaskChecker } from './tasks';
 import { CustomTask } from './tasks/custom';
 
-type SubGramCheckerOptions = {
+type SubGramCheckerOptions<C extends Context = Context> = {
     key: string;
     timeoutMs?: number;
     verifyOnInit?: boolean;
@@ -18,6 +18,11 @@ type SubGramCheckerOptions = {
      * Set to true if you haven't shared bot token with SubGram or have "Получать ссылки по API" enabled.
      */
     getLinksMode?: boolean;
+    /**
+     * Optional callback to send prompt message. If null, uses default implementation.
+     * If undefined, uses default implementation.
+     */
+    sendPrompt?: ((ctx: C, tasks: Task<C>[]) => void | Promise<void>) | null;
 };
 
 type SubGramSponsor = {
@@ -67,8 +72,9 @@ export class SubGramChecker<C extends Context = Context> implements Checker<C> {
     private readonly excludeAdsIds?: number[];
     private readonly maxSponsors?: number;
     private readonly getLinksMode?: boolean;
+    private readonly sendPrompt?: ((ctx: C, tasks: Task<C>[]) => void | Promise<void>) | null;
 
-    constructor(options: SubGramCheckerOptions) {
+    constructor(options: SubGramCheckerOptions<C>) {
         this.key = options.key;
         this.timeoutMs = options.timeoutMs ?? 15000;
         this.verifyOnInit = options.verifyOnInit ?? true;
@@ -78,6 +84,7 @@ export class SubGramChecker<C extends Context = Context> implements Checker<C> {
         // Don't default to false - keep it undefined if not provided
         // Mode will be determined from API response if undefined
         this.getLinksMode = options.getLinksMode;
+        this.sendPrompt = options.sendPrompt;
     }
 
     async init(): Promise<void> {
@@ -175,16 +182,22 @@ export class SubGramChecker<C extends Context = Context> implements Checker<C> {
                     const sponsors = data.additional?.sponsors || data.result?.sponsors || [];
                     const tasks = this.createTasksFromSponsors(sponsors);
 
-                    // Automatically show tasks to user (similar to TaskChecker)
+                    // Call developer's callback to send prompt, or use default implementation
                     if (tasks.length > 0) {
-                        const t = getTranslation(ctx.from?.language_code);
-                        const keyboard = TaskChecker.generateKeyboard(tasks, ctx);
-                        const text = t.promptText(tasks.length);
+                        if (this.sendPrompt) {
+                            // Pass tasks to show in keyboard
+                            await this.sendPrompt(ctx, tasks);
+                        } else {
+                            // Default prompt implementation
+                            const t = getTranslation(ctx.from?.language_code);
+                            const keyboard = TaskChecker.generateKeyboard(tasks, ctx);
+                            const text = t.promptText(tasks.length);
 
-                        await ctx.reply(text, {
-                            parse_mode: 'HTML',
-                            reply_markup: keyboard,
-                        });
+                            await ctx.reply(text, {
+                                parse_mode: 'HTML',
+                                reply_markup: keyboard,
+                            });
+                        }
                     }
 
                     return {

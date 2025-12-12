@@ -381,8 +381,15 @@ const translations = getTranslation('ru');
 
 // Get specific translation
 const prompt = t('promptText', 'en', 2); // count = 2
-const buttonLabel = t('buttonLabelChannel', 'ru');
+const buttonLabel = t('buttonLabelChannel', 'ru'); // Returns "➕ Подписаться"
+const botLabel = t('buttonLabelBot', 'en'); // Returns "🤖 Start bot"
 ```
+
+**Available translations:**
+
+- `promptText(count)`: Prompt message text (e.g., "Please complete the tasks to continue.")
+- `buttonLabelChannel`: Channel subscription button label (e.g., "➕ Subscribe")
+- `buttonLabelBot`: Bot start button label (e.g., "🤖 Start bot")
 
 Supported languages: English, Russian, Spanish, German, French, Italian, Portuguese, Arabic, Chinese, Japanese, Korean, Turkish, Ukrainian, Polish, Hindi, Indonesian, Vietnamese, Thai.
 
@@ -494,7 +501,7 @@ import { SubGramChecker } from '@telegramium/grammy-channel-verification';
 
 const verifier = await createVerifier({
     checker: new SubGramChecker({
-        apiKey: process.env.SUBGRAM_API_KEY, // Required: Your SubGram bot API key
+        key: process.env.SUBGRAM_API_KEY, // Required: Your SubGram bot API key
         // getLinksMode: undefined (auto-detected from SubGram settings)
         // OR getLinksMode: false (explicitly use Turnkey mode)
         timeoutMs: 15000, // Optional: Request timeout in milliseconds (default: 15000)
@@ -523,16 +530,23 @@ const verifier = await createVerifier({
 You manually create and send subscription prompts based on API response.
 
 ```ts
-import { SubGramChecker } from '@telegramium/grammy-channel-verification';
+import { SubGramChecker, TaskChecker } from '@telegramium/grammy-channel-verification';
 
 const verifier = await createVerifier({
     checker: new SubGramChecker({
-        apiKey: process.env.SUBGRAM_API_KEY, // Required: Your SubGram bot API key
+        key: process.env.SUBGRAM_API_KEY, // Required: Your SubGram bot API key
         getLinksMode: true, // Explicitly enable "Get links" mode
         timeoutMs: 15000,
         exclude_resource_ids: [123, 456],
         exclude_ads_ids: [789, 101112],
         max_sponsors: 3,
+        // Optional: custom prompt handler (same as TaskChecker)
+        sendPrompt: async (ctx, tasks) => {
+            const keyboard = TaskChecker.generateKeyboard(tasks, ctx);
+            await ctx.reply('Please complete the tasks', {
+                reply_markup: keyboard,
+            });
+        },
     }),
 });
 ```
@@ -675,6 +689,7 @@ Integrates with SubGram API for verification. Supports two modes: "Turnkey" (Sub
 - `exclude_ads_ids?`: number[] - Array of ad IDs to exclude from sponsors
 - `max_sponsors?`: number - Maximum number of sponsors to return
 - `getLinksMode?`: boolean (optional) - If `true`, explicitly uses "Get links" mode where you handle prompts manually. If `false`, explicitly uses "Turnkey" mode where SubGram handles prompts automatically. If `undefined` (not provided), the mode is automatically detected from SubGram settings based on the API response (checks for `additional.sponsors` in response).
+- `sendPrompt?`: (ctx, tasks) => void | Promise<void> | null (optional) - Optional callback to send prompt message. If `null`, uses default implementation. If `undefined`, uses default implementation. Only used in "Get links" mode.
 
 **Methods:**
 
