@@ -25,7 +25,7 @@ export interface CacheAdapter {
 
 export type VerificationFlavor = {
     verification?: CheckResult;
-    verifyTasks(onVerified?: (ctx: Context) => void | Promise<void>): Promise<boolean>; // Returns true if verified, false if blocked
+    verifyTasks(): Promise<boolean>; // Returns true if verified, false if blocked
 };
 
 export type VerificationOptions<C extends Context = Context> = {

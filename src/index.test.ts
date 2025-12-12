@@ -1,6 +1,6 @@
 import type { Context } from 'grammy';
 import { describe, expect, it, vi } from 'vitest';
-import { createChannelVerification } from './index';
+import { createVerifier } from './index';
 import type { VerificationFlavor } from './types';
 
 type MockCtx = Context &
@@ -16,10 +16,10 @@ const createContext = (): MockCtx =>
         reply: vi.fn(),
     }) as unknown as MockCtx;
 
-describe('createChannelVerification', () => {
+describe('createVerifier', () => {
     it('adds verifyTasks method to context', async () => {
         const checker = { check: vi.fn().mockResolvedValue({ ok: true }) };
-        const verifier = await createChannelVerification({ checker });
+        const verifier = await createVerifier({ checker });
         const ctx = createContext();
         const next = vi.fn();
 
@@ -31,7 +31,7 @@ describe('createChannelVerification', () => {
 
     it('verifyTasks returns true for verified users', async () => {
         const checker = { check: vi.fn().mockResolvedValue({ ok: true }) };
-        const verifier = await createChannelVerification({ checker });
+        const verifier = await createVerifier({ checker });
         const ctx = createContext();
         const next = vi.fn();
 
@@ -53,7 +53,7 @@ describe('createChannelVerification', () => {
                 tasks: [mockTask],
             }),
         };
-        const verifier = await createChannelVerification({ checker });
+        const verifier = await createVerifier({ checker });
         const ctx = createContext();
         const next = vi.fn();
 

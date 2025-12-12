@@ -6,14 +6,12 @@ import type { CheckResult, Checker, Task } from '../types';
 export class ChannelTask<C extends Context = Context> implements Task<C> {
     public url: string;
     private readonly id: number | string;
-    private readonly providedApi?: Api;
     private readonly buttonFn?: (ctx: C) => string;
     private resolved: boolean = false;
 
-    constructor(options: { id: number | string; url?: string; api?: Api; button?: (ctx: C) => string }) {
+    constructor(options: { id: number | string; url?: string; button?: (ctx: C) => string }) {
         this.id = options.id;
         this.url = options.url ?? '';
-        this.providedApi = options.api;
         this.buttonFn = options.button;
         this.resolved = !!options.url;
     }
@@ -31,8 +29,7 @@ export class ChannelTask<C extends Context = Context> implements Task<C> {
             return; // Already resolved
         }
 
-        const apiToUse = api ?? this.providedApi;
-        if (!apiToUse) {
+        if (!api) {
             if (!this.url) {
                 throw new Error(`Channel task ${String(this.id)} requires url or an api instance to resolve it`);
             }
@@ -40,7 +37,7 @@ export class ChannelTask<C extends Context = Context> implements Task<C> {
             return;
         }
 
-        const chat = (await apiToUse.getChat(this.id)) as Chat;
+        const chat = (await api.getChat(this.id)) as Chat;
         if (!('title' in chat)) {
             throw new Error(`Chat ${String(this.id)} is not a channel`);
         }

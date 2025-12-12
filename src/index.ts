@@ -50,7 +50,7 @@ async function tryWithCache<C extends Context>(
     return { result, fromCache: false };
 }
 
-export async function createChannelVerification<C extends Context = Context>(
+export async function createVerifier<C extends Context = Context>(
     options: VerificationOptions<C>
 ): Promise<MiddlewareFn<WithVerificationContext<C>>> {
     const {
@@ -63,14 +63,16 @@ export async function createChannelVerification<C extends Context = Context>(
     } = options;
 
     if (checker.init) {
-        await checker.init();
+        try {
+            await checker.init();
+        } catch (e) {
+            throw new Error('Failed to initialize channel verification checker', { cause: e });
+        }
     }
 
     // Return middleware that adds verifyTasks method to context
     return async (ctx: WithVerificationContext<C>, next) => {
-        ctx.verifyTasks = async (
-            onVerified?: (ctx: WithVerificationContext<C>) => void | Promise<void>
-        ): Promise<boolean> => {
+        ctx.verifyTasks = async (): Promise<boolean> => {
             // If already verified in this request, return early
             if (ctx.verification?.ok === true) {
                 return true;
@@ -88,7 +90,6 @@ export async function createChannelVerification<C extends Context = Context>(
                 ctx.verification = result;
 
                 if (result.ok) {
-                    await onVerified?.(ctx);
                     return true;
                 }
 

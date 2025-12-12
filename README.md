@@ -24,13 +24,13 @@ yarn add @telegramium/grammy-channel-verification
 
 ```ts
 import { Bot } from 'grammy';
-import { createChannelVerification, TaskChecker, ChannelTask } from '@telegramium/grammy-channel-verification';
+import { createVerifier, TaskChecker, ChannelTask } from '@telegramium/grammy-channel-verification';
 
 const bot = new Bot(process.env.BOT_TOKEN);
 
-const verifier = await createChannelVerification({
+const verifier = await createVerifier({
     checker: new TaskChecker({
-        tasks: [new ChannelTask({ id: -1001234567890, api: bot.api })],
+        tasks: [new ChannelTask({ id: -1001234567890 })],
         api: bot.api,
     }),
 });
@@ -50,18 +50,18 @@ bot.start();
 ### Example 2: Multiple Tasks
 
 ```ts
-import { Bot } from 'grammy';
-import { createChannelVerification, TaskChecker, ChannelTask, BotTask } from '@telegramium/grammy-channel-verification';
+import { Bot, Api } from 'grammy';
+import { createVerifier, TaskChecker, ChannelTask, BotTask } from '@telegramium/grammy-channel-verification';
 
 const bot = new Bot(process.env.BOT_TOKEN);
 
-const verifier = await createChannelVerification({
+const verifier = await createVerifier({
     checker: new TaskChecker({
         tasks: [
-            new ChannelTask({ id: -1001234567890, api: bot.api }),
+            new ChannelTask({ id: -1001234567890 }),
             new BotTask({
                 username: 'my_other_bot',
-                api: bot.api, // Optional: verify user started the bot
+                api: new Api('1111:xxxx'), // Optional: verify user started the bot
             }),
         ],
         api: bot.api,
@@ -84,11 +84,11 @@ bot.start();
 
 ```ts
 import { Bot } from 'grammy';
-import { createChannelVerification, FlyerChecker } from '@telegramium/grammy-channel-verification';
+import { createVerifier, FlyerChecker } from '@telegramium/grammy-channel-verification';
 
 const bot = new Bot(process.env.BOT_TOKEN);
 
-const verifier = await createChannelVerification({
+const verifier = await createVerifier({
     checker: new FlyerChecker({
         key: process.env.FLYER_KEY, // Your Flyer service API key
     }),
@@ -111,9 +111,9 @@ bot.start();
 ### Basic Setup
 
 ```ts
-import { Bot } from 'grammy';
+import { Bot, Api } from 'grammy';
 import {
-    createChannelVerification,
+    createVerifier,
     TaskChecker,
     ChannelTask,
     BotTask,
@@ -125,7 +125,7 @@ import {
 const bot = new Bot(process.env.BOT_TOKEN!);
 
 // Create verification middleware
-const verifier = await createChannelVerification({
+const verifier = await createVerifier({
     // TaskChecker handles all task verification
     checker: new TaskChecker({
         // Array of tasks users must complete
@@ -134,7 +134,6 @@ const verifier = await createChannelVerification({
             new ChannelTask({
                 id: -1001234567890, // Channel ID
                 url: 'https://t.me/my_channel', // Optional: invite link (will be resolved if not provided)
-                api: bot.api, // Required if url not provided
                 button: (ctx) => 'Custom Button Text', // Optional: custom button label
             }),
 
@@ -142,7 +141,7 @@ const verifier = await createChannelVerification({
             new BotTask({
                 username: 'my_other_bot', // Bot username without @
                 url: 'https://t.me/my_other_bot', // Optional: defaults to https://t.me/{username}
-                api: bot.api, // Optional: if provided, verifies user started the bot
+                api: new Api('1111:xxxx'), // Optional: API instance of the bot to check if user started it
                 button: (ctx) => 'Start Bot', // Optional: custom button label
             }),
 
@@ -210,20 +209,6 @@ bot.command('start', async (ctx) => {
     // User has completed all tasks
     await ctx.reply('Welcome!');
 });
-
-// With callback for when user becomes verified
-bot.command('premium', async (ctx) => {
-    const verified = await ctx.verifyTasks(async (ctx) => {
-        // This callback runs when user becomes verified
-        console.log(`User ${ctx.from?.id} verified!`);
-    });
-
-    if (!verified) {
-        return;
-    }
-
-    await ctx.reply('Premium access granted!');
-});
 ```
 
 ### Handling "I've done tasks" Callback
@@ -233,9 +218,9 @@ When using a custom `sendPrompt`, you can add a button for users to re-check the
 ```ts
 import { getTranslation } from '@telegramium/grammy-channel-verification';
 
-const verifier = await createChannelVerification({
+const verifier = await createVerifier({
     checker: new TaskChecker({
-        tasks: [new ChannelTask({ id: -100123, api: bot.api })],
+        tasks: [new ChannelTask({ id: -100123 })],
         api: bot.api,
         sendPrompt: async (ctx, tasks) => {
             const t = getTranslation(ctx.from?.language_code);
@@ -280,8 +265,7 @@ Verifies user is subscribed to a Telegram channel.
 ```ts
 new ChannelTask({
     id: -1001234567890, // Channel ID (required)
-    url: 'https://t.me/my_channel', // Invite link (optional, will be resolved)
-    api: bot.api, // API instance (required if url not provided)
+    url: 'https://t.me/my_channel', // Invite link (optional, will be resolved if not provided)
     button: (ctx) => 'Subscribe', // Custom button label (optional)
 });
 ```
@@ -331,7 +315,7 @@ new CustomTask({
 ```ts
 import { MemoryCache } from '@telegramium/grammy-channel-verification';
 
-const verifier = await createChannelVerification({
+const verifier = await createVerifier({
     checker: new TaskChecker({ tasks: [...] }),
     cache: new MemoryCache(),
     cacheTtlSeconds: 1800, // 30 minutes
@@ -346,7 +330,7 @@ import Redis from 'ioredis';
 
 const redis = new Redis(process.env.REDIS_URL);
 
-const verifier = await createChannelVerification({
+const verifier = await createVerifier({
     checker: new TaskChecker({ tasks: [...] }),
     cache: new RedisCache(redis),
     cacheTtlSeconds: 3600,
@@ -374,7 +358,7 @@ Supported languages: English, Russian, Spanish, German, French, Italian, Portugu
 
 ```ts
 const checker = new TaskChecker({
-    tasks: [new ChannelTask({ id: -100123, api: bot.api })],
+    tasks: [new ChannelTask({ id: -100123 })],
     api: bot.api,
 });
 
@@ -391,7 +375,7 @@ checker.removeTask('https://t.me/my_channel');
 checker.clearTasks();
 
 // Replace all tasks
-await checker.setTasks([new ChannelTask({ id: -100456, api: bot.api }), new BotTask({ username: 'other_bot' })]);
+await checker.setTasks([new ChannelTask({ id: -100456 }), new BotTask({ username: 'other_bot' })]);
 ```
 
 ### Context Extension
@@ -400,12 +384,12 @@ The middleware adds to your context:
 
 ```ts
 // Check result stored on context
-ctx.verification?.ok // boolean
-ctx.verification?.tasks // Task[] - uncompleted tasks
-ctx.verification?.meta // Record<string, unknown>
+ctx.verification?.ok; // boolean
+ctx.verification?.tasks; // Task[] - uncompleted tasks
+ctx.verification?.meta; // Record<string, unknown>
 
 // Method to check verification
-await ctx.verifyTasks(onVerifiedCallback?)
+await ctx.verifyTasks();
 ```
 
 ### TypeScript
@@ -425,7 +409,7 @@ Integrates with [Flyer Service](https://flyerservice.io) for advanced verificati
 ```ts
 import { FlyerChecker } from '@telegramium/grammy-channel-verification';
 
-const verifier = await createChannelVerification({
+const verifier = await createVerifier({
     checker: new FlyerChecker({
         key: process.env.FLYER_KEY, // Required: Your Flyer service API key
         timeoutMs: 15000, // Optional: Request timeout in milliseconds (default: 15000)
@@ -465,14 +449,14 @@ class MyChecker implements Checker {
     }
 }
 
-const verifier = await createChannelVerification({
+const verifier = await createVerifier({
     checker: new MyChecker(),
 });
 ```
 
 ## API Reference
 
-### `createChannelVerification(options)`
+### `createVerifier(options)`
 
 Creates verification middleware.
 
@@ -510,7 +494,6 @@ Main task checker class.
 
 - `id`: number | string
 - `url?`: string
-- `api?`: Api
 - `button?`: (ctx) => string
 
 ### `BotTask`
