@@ -396,13 +396,27 @@ await ctx.verifyTasks();
 
 ### TypeScript
 
+The middleware automatically adds verification properties and methods to your context. For TypeScript support, you can use the provided types:
+
 ```ts
-import type { WithVerificationContext } from '@telegramium/grammy-channel-verification';
+import type { WithVerificationContext, VerificationFlavor } from '@telegramium/grammy-channel-verification';
+import type { Context } from 'grammy';
 
-type MyContext = Context & WithVerificationContext;
+// Option 1: Use the helper type
+type MyContext = WithVerificationContext<Context>;
 
-// Now ctx has verifyTasks() and verification properties
+// Option 2: Manually extend with VerificationFlavor
+type MyContext = Context & VerificationFlavor;
+
+// Now ctx has:
+// - ctx.verifyTasks(): Promise<boolean> - Check if user completed tasks
+// - ctx.verification?: CheckResult - Current verification result
 ```
+
+**VerificationFlavor** adds the following to your context:
+
+- `verification?: CheckResult` - The current verification result (if available)
+- `verifyTasks(): Promise<boolean>` - Method to check if user has completed verification tasks. Returns `true` if verified, `false` if blocked.
 
 ### FlyerChecker
 
