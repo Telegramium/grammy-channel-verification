@@ -85,17 +85,11 @@ jobs:
 
             - name: Create GitHub Release
               if: steps.check_changes.outputs.changed == 'true' && steps.check_tag.outputs.exists == 'false'
-              uses: softprops/action-gh-release@v1
+              uses: softprops/action-gh-release@v2
               with:
                   tag_name: v${{ steps.package_version.outputs.version }}
                   name: Release v${{ steps.package_version.outputs.version }}
                   generate_release_notes: true
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-            - name: Setup pnpm for Publish
-              if: steps.check_changes.outputs.changed == 'true' && steps.check_tag.outputs.exists == 'false'
-              uses: pnpm/action-setup@v4
 
             - name: Use Node.js for Publish
               if: steps.check_changes.outputs.changed == 'true' && steps.check_tag.outputs.exists == 'false'
@@ -103,6 +97,10 @@ jobs:
               with:
                   registry-url: 'https://registry.npmjs.org'
                   cache: 'pnpm'
+
+            - name: Setup pnpm for Publish
+              if: steps.check_changes.outputs.changed == 'true' && steps.check_tag.outputs.exists == 'false'
+              uses: pnpm/action-setup@v4
 
             - name: Install dependencies for Publish
               if: steps.check_changes.outputs.changed == 'true' && steps.check_tag.outputs.exists == 'false'
@@ -114,4 +112,4 @@ jobs:
 
             - name: Publish to NPM
               if: steps.check_changes.outputs.changed == 'true' && steps.check_tag.outputs.exists == 'false'
-              run: npm publish --provenance --access public
+              run: pnpm publish --access public --provenance

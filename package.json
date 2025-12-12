@@ -36,7 +36,7 @@
         "access": "public"
     },
     "devDependencies": {
-        "@types/node": "^24.10.3",
+        "@types/node": "^25.0.1",
         "grammy": "^1.38.4",
         "prettier": "^3.7.4",
         "typescript": "^5.9.3",

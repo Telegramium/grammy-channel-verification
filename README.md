@@ -26,7 +26,7 @@ yarn add @telegramium/grammy-channel-verification
 import { Bot } from 'grammy';
 import { createChannelVerification, TaskChecker, ChannelTask } from '@telegramium/grammy-channel-verification';
 
-const bot = new Bot(process.env.BOT_TOKEN!);
+const bot = new Bot(process.env.BOT_TOKEN);
 
 const verifier = await createChannelVerification({
     checker: new TaskChecker({
@@ -53,7 +53,7 @@ bot.start();
 import { Bot } from 'grammy';
 import { createChannelVerification, TaskChecker, ChannelTask, BotTask } from '@telegramium/grammy-channel-verification';
 
-const bot = new Bot(process.env.BOT_TOKEN!);
+const bot = new Bot(process.env.BOT_TOKEN);
 
 const verifier = await createChannelVerification({
     checker: new TaskChecker({
@@ -80,6 +80,32 @@ bot.command('premium', async (ctx) => {
 bot.start();
 ```
 
+### Example 3: Flyer Service Integration
+
+```ts
+import { Bot } from 'grammy';
+import { createChannelVerification, FlyerChecker } from '@telegramium/grammy-channel-verification';
+
+const bot = new Bot(process.env.BOT_TOKEN);
+
+const verifier = await createChannelVerification({
+    checker: new FlyerChecker({
+        key: process.env.FLYER_KEY, // Your Flyer service API key
+    }),
+});
+
+bot.use(verifier);
+
+bot.command('start', async (ctx) => {
+    if (!(await ctx.verifyTasks())) {
+        return; // Flyer service handles the prompt
+    }
+    await ctx.reply('Welcome!');
+});
+
+bot.start();
+```
+
 ## Full Documentation
 
 ### Basic Setup
@@ -92,6 +118,7 @@ import {
     ChannelTask,
     BotTask,
     CustomTask,
+    FlyerChecker,
     MemoryCache,
 } from '@telegramium/grammy-channel-verification';
 
@@ -391,6 +418,39 @@ type MyContext = Context & WithVerificationContext;
 // Now ctx has verifyTasks() and verification properties
 ```
 
+### FlyerChecker
+
+Integrates with [Flyer Service](https://flyerservice.io) for advanced verification management. Flyer handles all prompts and verification logic through their API.
+
+```ts
+import { FlyerChecker } from '@telegramium/grammy-channel-verification';
+
+const verifier = await createChannelVerification({
+    checker: new FlyerChecker({
+        key: process.env.FLYER_KEY, // Required: Your Flyer service API key
+        timeoutMs: 15000, // Optional: Request timeout in milliseconds (default: 15000)
+        verifyOnInit: true, // Optional: Verify API key on initialization, you want to disable this on serverless platforms (default: true)
+        message: {
+            // Optional: Customize Flyer prompt message
+            rows: 2, // Number of button rows
+            text: 'Custom prompt text',
+            button_bot: 'Start Bot',
+            button_channel: 'Subscribe',
+            button_boost: 'Boost Channel',
+            button_url: 'Visit Website',
+            button_fp: 'Follow Profile',
+        },
+    }),
+});
+```
+
+**Important Notes:**
+
+- Flyer service handles its own prompts and UI - no tasks are returned to the middleware
+- When `skip === true` from Flyer API, the user is considered verified
+- The checker automatically sends user language code to Flyer for localization
+- If Flyer API request fails, verification returns `false` (user blocked)
+
 ### Custom Checker
 
 You can create your own checker:
@@ -469,6 +529,29 @@ Main task checker class.
 - `url`: string
 - `check`: (ctx) => Promise<boolean>
 - `button?`: (ctx) => string
+
+### `FlyerChecker`
+
+Integrates with Flyer Service API for verification.
+
+**Constructor:**
+
+- `key`: string (required) - Your Flyer service API key
+- `timeoutMs?`: number (default: 15000) - Request timeout in milliseconds
+- `verifyOnInit?`: boolean (default: true) - Verify API key on initialization
+- `message?`: object - Customize Flyer prompt message
+    - `rows?`: number - Number of button rows
+    - `text?`: string - Custom prompt text
+    - `button_bot?`: string - Bot button label
+    - `button_channel?`: string - Channel button label
+    - `button_boost?`: string - Boost button label
+    - `button_url?`: string - URL button label
+    - `button_fp?`: string - Follow profile button label
+
+**Methods:**
+
+- `init()`: Promise<void> - Initializes and verifies the API key (called automatically)
+- `check(ctx)`: Promise<CheckResult> - Checks user verification status via Flyer API
 
 ## License
 
