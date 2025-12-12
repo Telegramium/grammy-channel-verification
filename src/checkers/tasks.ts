@@ -5,14 +5,16 @@ import type { CheckResult, Checker, Task } from '../types';
 
 export class ChannelTask<C extends Context = Context> implements Task<C> {
     public url: string;
+    public alwaysShow?: boolean;
     private readonly id: number | string;
     private readonly buttonFn?: (ctx: C) => string;
     private resolved: boolean = false;
 
-    constructor(options: { id: number | string; url?: string; button?: (ctx: C) => string }) {
+    constructor(options: { id: number | string; url?: string; button?: (ctx: C) => string; alwaysShow?: boolean }) {
         this.id = options.id;
         this.url = options.url ?? '';
         this.buttonFn = options.button;
+        this.alwaysShow = options.alwaysShow;
         this.resolved = !!options.url;
     }
 
@@ -66,15 +68,23 @@ export class ChannelTask<C extends Context = Context> implements Task<C> {
 
 export class BotTask<C extends Context = Context> implements Task<C> {
     public url: string;
+    public alwaysShow?: boolean;
     private readonly username: string;
     private readonly api?: Api;
     private readonly buttonFn?: (ctx: C) => string;
 
-    constructor(options: { username: string; url?: string; api?: Api; button?: (ctx: C) => string }) {
+    constructor(options: {
+        username: string;
+        url?: string;
+        api?: Api;
+        button?: (ctx: C) => string;
+        alwaysShow?: boolean;
+    }) {
         this.username = options.username;
         this.url = options.url || `https://t.me/${options.username}`;
         this.api = options.api;
         this.buttonFn = options.button;
+        this.alwaysShow = options.alwaysShow;
     }
 
     button(ctx: C): string {
@@ -110,13 +120,20 @@ export class BotTask<C extends Context = Context> implements Task<C> {
 
 export class CustomTask<C extends Context = Context> implements Task<C> {
     public url: string;
+    public alwaysShow?: boolean;
     private readonly checkFn: (ctx: C) => Promise<boolean>;
     private readonly buttonFn?: (ctx: C) => string;
 
-    constructor(options: { url: string; check: (ctx: C) => Promise<boolean>; button?: (ctx: C) => string }) {
+    constructor(options: {
+        url: string;
+        check: (ctx: C) => Promise<boolean>;
+        button?: (ctx: C) => string;
+        alwaysShow?: boolean;
+    }) {
         this.url = options.url;
         this.checkFn = options.check;
         this.buttonFn = options.button;
+        this.alwaysShow = options.alwaysShow;
     }
 
     button(ctx: C): string {
@@ -215,12 +232,12 @@ export class TaskChecker<C extends Context = Context> implements Checker<C> {
     }
 
     /**
-     * Check which tasks are not completed
-     * @returns Array of tasks that are not completed
+     * Check all tasks and return both uncompleted tasks and tasks to show
+     * @returns Object with uncompleted tasks and tasks to show in keyboard
      */
-    private async checkUncompletedTasks(ctx: C): Promise<Task<C>[]> {
+    private async checkTasks(ctx: C): Promise<{ uncompleted: Task<C>[]; toShow: Task<C>[] }> {
         if (!ctx.from || !this.tasks.length) {
-            return [];
+            return { uncompleted: [], toShow: [] };
         }
 
         const results = await Promise.all(
@@ -230,7 +247,11 @@ export class TaskChecker<C extends Context = Context> implements Checker<C> {
             })
         );
 
-        return results.filter((r) => !r.isCompleted).map((r) => r.task);
+        const uncompleted = results.filter((r) => !r.isCompleted).map((r) => r.task);
+        // Include uncompleted tasks and tasks with alwaysShow: true
+        const toShow = results.filter((r) => !r.isCompleted || r.task.alwaysShow).map((r) => r.task);
+
+        return { uncompleted, toShow };
     }
 
     async init(): Promise<void> {
@@ -249,19 +270,20 @@ export class TaskChecker<C extends Context = Context> implements Checker<C> {
             return { ok: true, tasks: [] };
         }
 
-        // Check which tasks are not completed
-        const uncompletedTasks = await this.checkUncompletedTasks(ctx);
+        // Check all tasks once (returns both uncompleted and tasks to show)
+        const { uncompleted: uncompletedTasks, toShow: tasksToShow } = await this.checkTasks(ctx);
 
+        // If there are uncompleted tasks, block verification
         if (uncompletedTasks.length > 0) {
             // Call developer's callback to send prompt, or use default implementation
             if (this.sendPrompt) {
-                // Pass all tasks to show in keyboard
-                await this.sendPrompt(ctx, this.tasks);
+                // Pass tasks to show in keyboard (uncompleted + alwaysShow tasks)
+                await this.sendPrompt(ctx, tasksToShow);
             } else {
                 // Default prompt implementation
-                // Show all tasks in keyboard, but only count uncompleted ones
+                // Show uncompleted and alwaysShow tasks in keyboard
                 const t = getTranslation(ctx.from?.language_code);
-                const keyboard = TaskChecker.generateKeyboard(this.tasks, ctx);
+                const keyboard = TaskChecker.generateKeyboard(tasksToShow, ctx);
 
                 const count = uncompletedTasks.length;
                 const text = t.promptText(count);
@@ -271,7 +293,7 @@ export class TaskChecker<C extends Context = Context> implements Checker<C> {
                     reply_markup: keyboard,
                 });
             }
-            // Return uncompleted tasks
+            // Return uncompleted tasks (alwaysShow tasks don't block verification)
             return { ok: false, tasks: uncompletedTasks };
         }
 

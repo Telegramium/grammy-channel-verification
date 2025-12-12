@@ -2,6 +2,8 @@
 
 Task verification middleware for grammY bots. Verify users have completed required tasks (subscribe to channels, start bots, custom tasks) before accessing your bot.
 
+![Screenshot](./assets/screenshot_channels.png)
+
 ## Features
 
 - ⭐ Built-in i18n support.

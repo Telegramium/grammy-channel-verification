@@ -5,6 +5,7 @@ export interface Task<C extends Context = Context> {
     check(ctx: C, api: Api): Promise<boolean>;
     resolve?(api?: Api): Promise<void>;
     button?(ctx: C): string;
+    alwaysShow?: boolean; // If true, task will be shown in keyboard even if completed
 }
 
 export type CheckResult = {
