@@ -9,7 +9,6 @@ on:
 jobs:
     build:
         runs-on: ubuntu-latest
-
         steps:
             - uses: actions/checkout@v6
 
@@ -101,6 +100,7 @@ jobs:
               with:
                   registry-url: 'https://registry.npmjs.org'
                   cache: 'pnpm'
+                  node-version: 'latest'
 
             - name: Install dependencies for Publish
               if: steps.check_changes.outputs.changed == 'true' && steps.check_tag.outputs.exists == 'false'
@@ -109,10 +109,6 @@ jobs:
             - name: Build for Publish
               if: steps.check_changes.outputs.changed == 'true' && steps.check_tag.outputs.exists == 'false'
               run: pnpm run build
-
-            - name: Update npm to latest version (for Trusted Publishing to work)
-              if: steps.check_changes.outputs.changed == 'true' && steps.check_tag.outputs.exists == 'false'
-              run: npm install -g npm@latest
 
             - name: Publish to NPM
               if: steps.check_changes.outputs.changed == 'true' && steps.check_tag.outputs.exists == 'false'
