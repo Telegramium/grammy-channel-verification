@@ -285,7 +285,7 @@ export class TaskChecker<C extends Context = Context> implements Checker<C> {
                 const t = getTranslation(ctx.from?.language_code);
                 const keyboard = TaskChecker.generateKeyboard(tasksToShow, ctx);
 
-                const count = uncompletedTasks.length;
+                const count = tasksToShow.length;
                 const text = t.promptText(count);
 
                 await ctx.reply(text, {
