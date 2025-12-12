@@ -23,6 +23,17 @@ type SubGramCheckerOptions<C extends Context = Context> = {
      * If undefined, uses default implementation.
      */
     sendPrompt?: ((ctx: C, tasks: Task<C>[]) => void | Promise<void>) | null;
+    /**
+     * Action type for sponsor list management:
+     * - "subscribe" (default): List of sponsors is pinned to the user for N amount of time.
+     *   Subscription check can be performed by repeated request with the same user_id.
+     * - "newtask": List is not pinned. On each new request, the service will reassemble the list of sponsors.
+     *   Subscription check is performed through the "Check subscriptions" method.
+     * - "task": List is "conditionally" pinned. Sponsors are also remembered in the system, but on repeated
+     *   request with the same user_id in case of successful subscription, the list is deleted and on a new
+     *   request a new list will be selected. This method is a mixed variant between subscribe and newtask.
+     */
+    action?: 'subscribe' | 'newtask' | 'task';
 };
 
 type SubGramSponsor = {
@@ -73,6 +84,7 @@ export class SubGramChecker<C extends Context = Context> implements Checker<C> {
     private readonly maxSponsors?: number;
     private readonly getLinksMode?: boolean;
     private readonly sendPrompt?: ((ctx: C, tasks: Task<C>[]) => void | Promise<void>) | null;
+    private readonly action?: 'subscribe' | 'newtask' | 'task';
 
     constructor(options: SubGramCheckerOptions<C>) {
         this.key = options.key;
@@ -85,6 +97,7 @@ export class SubGramChecker<C extends Context = Context> implements Checker<C> {
         // Mode will be determined from API response if undefined
         this.getLinksMode = options.getLinksMode;
         this.sendPrompt = options.sendPrompt;
+        this.action = options.action;
     }
 
     async init(): Promise<void> {
@@ -147,6 +160,9 @@ export class SubGramChecker<C extends Context = Context> implements Checker<C> {
             }
             if (this.maxSponsors !== undefined) {
                 payload.max_sponsors = this.maxSponsors;
+            }
+            if (this.action) {
+                payload.action = this.action;
             }
 
             const data = await this.post<SubGramResponse>(

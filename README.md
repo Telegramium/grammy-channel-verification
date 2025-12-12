@@ -509,6 +509,7 @@ const verifier = await createVerifier({
         exclude_resource_ids: [123, 456], // Optional: Array of resource IDs to exclude
         exclude_ads_ids: [789, 101112], // Optional: Array of ad IDs to exclude
         max_sponsors: 3, // Optional: Maximum number of sponsors to return
+        action: 'subscribe', // Optional: Action type (default: 'subscribe')
     }),
 });
 ```
@@ -540,6 +541,7 @@ const verifier = await createVerifier({
         exclude_resource_ids: [123, 456],
         exclude_ads_ids: [789, 101112],
         max_sponsors: 3,
+        action: 'newtask', // Optional: Action type (default: 'subscribe')
         // Optional: custom prompt handler (same as TaskChecker)
         sendPrompt: async (ctx, tasks) => {
             const keyboard = TaskChecker.generateKeyboard(tasks, ctx);
@@ -690,6 +692,10 @@ Integrates with SubGram API for verification. Supports two modes: "Turnkey" (Sub
 - `max_sponsors?`: number - Maximum number of sponsors to return
 - `getLinksMode?`: boolean (optional) - If `true`, explicitly uses "Get links" mode where you handle prompts manually. If `false`, explicitly uses "Turnkey" mode where SubGram handles prompts automatically. If `undefined` (not provided), the mode is automatically detected from SubGram settings based on the API response (checks for `additional.sponsors` in response).
 - `sendPrompt?`: (ctx, tasks) => void | Promise<void> | null (optional) - Optional callback to send prompt message. If `null`, uses default implementation. If `undefined`, uses default implementation. Only used in "Get links" mode.
+- `action?`: 'subscribe' | 'newtask' | 'task' (optional, default: 'subscribe') - Action type for sponsor list management:
+    - `'subscribe'` (default): List of sponsors is pinned to the user for N amount of time. Subscription check can be performed by repeated request with the same user_id.
+    - `'newtask'`: List is not pinned. On each new request, the service will reassemble the list of sponsors. Subscription check is performed through the "Check subscriptions" method.
+    - `'task'`: List is "conditionally" pinned. Sponsors are also remembered in the system, but on repeated request with the same user_id in case of successful subscription, the list is deleted and on a new request a new list will be selected. This method is a mixed variant between subscribe and newtask.
 
 **Methods:**
 
