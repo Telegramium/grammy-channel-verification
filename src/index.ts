@@ -9,6 +9,7 @@ import {
 export { MemoryCache } from './cache/memory';
 export { RedisCache } from './cache/redis';
 export { FlyerChecker } from './checkers/flyer';
+export { SubGramChecker } from './checkers/subgram';
 export { TaskChecker } from './checkers/tasks';
 export { BotTask } from './checkers/tasks/bot';
 export { ChannelTask } from './checkers/tasks/channel';

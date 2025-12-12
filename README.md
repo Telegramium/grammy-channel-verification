@@ -108,6 +108,32 @@ bot.command('start', async (ctx) => {
 bot.start();
 ```
 
+### Example 4: SubGram Service Integration
+
+```ts
+import { Bot } from 'grammy';
+import { createVerifier, SubGramChecker } from '@telegramium/grammy-channel-verification';
+
+const bot = new Bot(process.env.BOT_TOKEN);
+
+const verifier = await createVerifier({
+    checker: new SubGramChecker({
+        apiKey: process.env.SUBGRAM_API_KEY, // Your SubGram bot API key
+    }),
+});
+
+bot.use(verifier);
+
+bot.command('start', async (ctx) => {
+    if (!(await ctx.verifyTasks())) {
+        return; // SubGram service handles the prompt
+    }
+    await ctx.reply('Welcome!');
+});
+
+bot.start();
+```
+
 ## Full Documentation
 
 ### Basic Setup
@@ -121,6 +147,7 @@ import {
     BotTask,
     CustomTask,
     FlyerChecker,
+    SubGramChecker,
     MemoryCache,
 } from '@telegramium/grammy-channel-verification';
 
@@ -269,6 +296,7 @@ new ChannelTask({
     id: -1001234567890, // Channel ID (required)
     url: 'https://t.me/my_channel', // Invite link (optional, will be resolved if not provided)
     button: (ctx) => 'Subscribe', // Custom button label (optional)
+    alwaysShow: true, // Optional: show button even if completed, and also when there are other uncompleted tasks (default: false)
 });
 ```
 
@@ -288,6 +316,7 @@ new BotTask({
     username: 'my_bot',
     api: bot.api, // API instance of the other bot (uses user ID to check if bot was started)
     button: (ctx) => 'Start Bot', // Optional
+    alwaysShow: true, // Optional: show button even if completed, and also when there are other uncompleted tasks (default: false)
 });
 ```
 
@@ -307,6 +336,7 @@ new CustomTask({
         return await checkUserInDatabase(userId);
     },
     button: (ctx) => 'Complete Task', // Optional
+    alwaysShow: true, // Optional: show button even if completed, and also when there are other uncompleted tasks (default: false)
 });
 ```
 
@@ -451,6 +481,83 @@ const verifier = await createVerifier({
 - The checker automatically sends user language code to Flyer for localization
 - If Flyer API request fails, verification returns `false` (user blocked)
 
+### SubGramChecker
+
+Integrates with [SubGram API](https://api.subgram.org) for advanced verification management. Supports two modes: "Turnkey" (SubGram handles prompts) and "Get links" (you handle prompts).
+
+#### Mode 1: Turnkey (Auto-detected or Explicit)
+
+SubGram automatically sends subscription prompts to users. You just need to check the status.
+
+```ts
+import { SubGramChecker } from '@telegramium/grammy-channel-verification';
+
+const verifier = await createVerifier({
+    checker: new SubGramChecker({
+        apiKey: process.env.SUBGRAM_API_KEY, // Required: Your SubGram bot API key
+        // getLinksMode: undefined (auto-detected from SubGram settings)
+        // OR getLinksMode: false (explicitly use Turnkey mode)
+        timeoutMs: 15000, // Optional: Request timeout in milliseconds (default: 15000)
+        verifyOnInit: true, // Optional: Verify API key on initialization (default: true)
+        exclude_resource_ids: [123, 456], // Optional: Array of resource IDs to exclude
+        exclude_ads_ids: [789, 101112], // Optional: Array of ad IDs to exclude
+        max_sponsors: 3, // Optional: Maximum number of sponsors to return
+    }),
+});
+```
+
+**Requirements:**
+
+- Share your bot token with SubGram in their panel
+- "Получать ссылки по API" (Get links via API) must be **OFF**
+
+**Behavior:**
+
+- When status is `warning`, SubGram automatically sends the subscription message
+- You don't need to handle prompts - just check `verifyTasks()` and SubGram does the rest
+- No tasks are returned to the middleware
+- **Note:** If `getLinksMode` is not provided, the mode is automatically detected from SubGram settings based on the API response
+
+#### Mode 2: Get Links (Auto-detected or Explicit)
+
+You manually create and send subscription prompts based on API response.
+
+```ts
+import { SubGramChecker } from '@telegramium/grammy-channel-verification';
+
+const verifier = await createVerifier({
+    checker: new SubGramChecker({
+        apiKey: process.env.SUBGRAM_API_KEY, // Required: Your SubGram bot API key
+        getLinksMode: true, // Explicitly enable "Get links" mode
+        timeoutMs: 15000,
+        exclude_resource_ids: [123, 456],
+        exclude_ads_ids: [789, 101112],
+        max_sponsors: 3,
+    }),
+});
+```
+
+**Requirements:**
+
+- Don't share bot token with SubGram **OR** enable "Получать ссылки по API" in panel
+
+**Behavior:**
+
+- When status is `warning`, tasks are returned with sponsor links
+- You handle showing the prompts using the middleware's task system
+- Users click sponsor buttons, then click "I've done" to re-verify
+- **Note:** If `getLinksMode` is not provided, the mode is automatically detected from SubGram settings based on the API response
+
+**Important Notes:**
+
+- **You need to add your bot to SubGram panel** to get the bot API key (`apiKey`)
+- The `getLinksMode` option is optional - if not provided, it's automatically detected from SubGram settings based on the API response
+- You can change SubGram settings at any time in the panel, and the checker will adapt automatically (if `getLinksMode` is not explicitly set)
+- The checker automatically sends user information (first_name, username, language_code, is_premium) to SubGram
+- API key verification is performed using the `/get-balance` endpoint during initialization
+- On API errors, users are allowed through (fail-open behavior)
+- Status `ok` or `error` allows user through, status `warning` blocks until subscription
+
 ### Custom Checker
 
 You can create your own checker:
@@ -511,6 +618,7 @@ Main task checker class.
 - `id`: number | string
 - `url?`: string
 - `button?`: (ctx) => string
+- `alwaysShow?`: boolean - If true, task button will be shown even if task is completed, and also when there are other uncompleted tasks (default: false)
 
 ### `BotTask`
 
@@ -520,6 +628,7 @@ Main task checker class.
 - `url?`: string
 - `api?`: Api
 - `button?`: (ctx) => string
+- `alwaysShow?`: boolean - If true, task button will be shown even if task is completed, and also when there are other uncompleted tasks (default: false)
 
 ### `CustomTask`
 
@@ -528,6 +637,7 @@ Main task checker class.
 - `url`: string
 - `check`: (ctx) => Promise<boolean>
 - `button?`: (ctx) => string
+- `alwaysShow?`: boolean - If true, task button will be shown even if task is completed, and also when there are other uncompleted tasks (default: false)
 
 ### `FlyerChecker`
 
@@ -551,6 +661,28 @@ Integrates with Flyer Service API for verification.
 
 - `init()`: Promise<void> - Initializes and verifies the API key (called automatically)
 - `check(ctx)`: Promise<CheckResult> - Checks user verification status via Flyer API
+
+### `SubGramChecker`
+
+Integrates with SubGram API for verification. Supports two modes: "Turnkey" (SubGram handles prompts) and "Get links" (you handle prompts).
+
+**Constructor:**
+
+- `apiKey`: string (required) - Your SubGram bot API key (obtained after adding your bot to SubGram panel)
+- `timeoutMs?`: number (default: 15000) - Request timeout in milliseconds
+- `verifyOnInit?`: boolean (default: true) - Verify API key on initialization using `/get-balance` endpoint
+- `exclude_resource_ids?`: number[] - Array of resource IDs to exclude from sponsors
+- `exclude_ads_ids?`: number[] - Array of ad IDs to exclude from sponsors
+- `max_sponsors?`: number - Maximum number of sponsors to return
+- `getLinksMode?`: boolean (optional) - If `true`, explicitly uses "Get links" mode where you handle prompts manually. If `false`, explicitly uses "Turnkey" mode where SubGram handles prompts automatically. If `undefined` (not provided), the mode is automatically detected from SubGram settings based on the API response (checks for `additional.sponsors` in response).
+
+**Methods:**
+
+- `init()`: Promise<void> - Initializes and verifies the API key using `/get-balance` endpoint (called automatically)
+- `check(ctx)`: Promise<CheckResult> - Checks user verification status via SubGram API `/get-sponsors` endpoint
+    - Returns `ok: false` with tasks when status is `warning` and `getLinksMode: true`
+    - Returns `ok: false` without tasks when status is `warning` and `getLinksMode: false` (SubGram handles it)
+    - Returns `ok: true` when status is `ok` or `error`
 
 ## License
 
