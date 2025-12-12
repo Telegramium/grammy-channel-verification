@@ -118,7 +118,7 @@ const bot = new Bot(process.env.BOT_TOKEN);
 
 const verifier = await createVerifier({
     checker: new SubGramChecker({
-        apiKey: process.env.SUBGRAM_API_KEY, // Your SubGram bot API key
+        key: process.env.SUBGRAM_API_KEY, // Your SubGram bot API key
     }),
 });
 
@@ -550,7 +550,7 @@ const verifier = await createVerifier({
 
 **Important Notes:**
 
-- **You need to add your bot to SubGram panel** to get the bot API key (`apiKey`)
+- **You need to add your bot to SubGram panel** to get the bot API key (`key`)
 - The `getLinksMode` option is optional - if not provided, it's automatically detected from SubGram settings based on the API response
 - You can change SubGram settings at any time in the panel, and the checker will adapt automatically (if `getLinksMode` is not explicitly set)
 - The checker automatically sends user information (first_name, username, language_code, is_premium) to SubGram
@@ -668,7 +668,7 @@ Integrates with SubGram API for verification. Supports two modes: "Turnkey" (Sub
 
 **Constructor:**
 
-- `apiKey`: string (required) - Your SubGram bot API key (obtained after adding your bot to SubGram panel)
+- `key`: string (required) - Your SubGram bot API key (obtained after adding your bot to SubGram panel)
 - `timeoutMs?`: number (default: 15000) - Request timeout in milliseconds
 - `verifyOnInit?`: boolean (default: true) - Verify API key on initialization using `/get-balance` endpoint
 - `exclude_resource_ids?`: number[] - Array of resource IDs to exclude from sponsors

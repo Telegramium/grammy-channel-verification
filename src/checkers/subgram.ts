@@ -1,9 +1,11 @@
 import type { Context } from 'grammy';
+import { getTranslation } from '../i18n';
 import type { CheckResult, Checker, Task } from '../types';
+import { TaskChecker } from './tasks';
 import { CustomTask } from './tasks/custom';
 
 type SubGramCheckerOptions = {
-    apiKey: string;
+    key: string;
     timeoutMs?: number;
     verifyOnInit?: boolean;
     exclude_resource_ids?: number[];
@@ -58,7 +60,7 @@ type SubGramBalanceResponse = {
 };
 
 export class SubGramChecker<C extends Context = Context> implements Checker<C> {
-    private readonly apiKey: string;
+    private readonly key: string;
     private readonly timeoutMs: number;
     private readonly verifyOnInit: boolean;
     private readonly excludeResourceIds?: number[];
@@ -67,7 +69,7 @@ export class SubGramChecker<C extends Context = Context> implements Checker<C> {
     private readonly getLinksMode?: boolean;
 
     constructor(options: SubGramCheckerOptions) {
-        this.apiKey = options.apiKey;
+        this.key = options.key;
         this.timeoutMs = options.timeoutMs ?? 15000;
         this.verifyOnInit = options.verifyOnInit ?? true;
         this.excludeResourceIds = options.exclude_resource_ids;
@@ -173,6 +175,18 @@ export class SubGramChecker<C extends Context = Context> implements Checker<C> {
                     const sponsors = data.additional?.sponsors || data.result?.sponsors || [];
                     const tasks = this.createTasksFromSponsors(sponsors);
 
+                    // Automatically show tasks to user (similar to TaskChecker)
+                    if (tasks.length > 0) {
+                        const t = getTranslation(ctx.from?.language_code);
+                        const keyboard = TaskChecker.generateKeyboard(tasks, ctx);
+                        const text = t.promptText(tasks.length);
+
+                        await ctx.reply(text, {
+                            parse_mode: 'HTML',
+                            reply_markup: keyboard,
+                        });
+                    }
+
                     return {
                         ok: false,
                         tasks: tasks.length > 0 ? tasks : undefined,
@@ -208,7 +222,7 @@ export class SubGramChecker<C extends Context = Context> implements Checker<C> {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                Auth: this.apiKey,
+                Auth: this.key,
             },
             signal: AbortSignal.timeout(timeoutMs),
             body: Object.keys(payload).length > 0 ? JSON.stringify(payload) : undefined,
