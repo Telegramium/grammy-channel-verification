@@ -1,6 +1,6 @@
 {
     "name": "@telegramium/grammy-channel-verification",
-    "version": "1.1.2",
+    "version": "1.1.3",
     "description": "Channel verification for grammY Telegram bots. Supports different task types and caching. Built-in Flyer and SubGram API support.",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",

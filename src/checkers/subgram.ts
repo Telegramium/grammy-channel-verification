@@ -113,7 +113,7 @@ export class SubGramChecker<C extends Context = Context> implements Checker<C> {
             );
 
             // If we get an authentication error, the key is invalid
-            if (data.code === 401 || (data.status === 'error' && data.code === 401)) {
+            if (data.code === 401) {
                 throw new Error('SubGram API key verification failed: Invalid API key');
             }
 
@@ -191,11 +191,16 @@ export class SubGramChecker<C extends Context = Context> implements Checker<C> {
                     this.getLinksMode !== undefined
                         ? this.getLinksMode
                         : // If undefined, check if additional.sponsors exists (indicates "get links" mode)
-                          data.additional?.sponsors !== undefined;
+                          // Check if it's an array (not just undefined) to properly detect the mode
+                          Array.isArray(data.additional?.sponsors);
 
                 if (isGetLinksMode) {
                     // "Get links" mode: we need to return tasks for manual handling
-                    const sponsors = data.additional?.sponsors || data.result?.sponsors || [];
+                    const sponsors = Array.isArray(data.additional?.sponsors)
+                        ? data.additional.sponsors
+                        : Array.isArray(data.result?.sponsors)
+                          ? data.result.sponsors
+                          : [];
                     const tasks = this.createTasksFromSponsors(sponsors);
 
                     // Call developer's callback to send prompt, or use default implementation
