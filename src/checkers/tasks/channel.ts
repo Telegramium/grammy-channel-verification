@@ -65,3 +65,4 @@ export class ChannelTask<C extends Context = Context> implements Task<C> {
         return member.status !== 'left';
     }
 }
+
