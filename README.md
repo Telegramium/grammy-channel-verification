@@ -9,6 +9,7 @@ Task verification middleware for grammY bots. Verify users have completed requir
 - ⭐ Built-in i18n support.
 - 🗄️ Built-in caching support.
 - 🔷 TypeScript support.
+- 📦 Flyer and SubGram API support.
 
 ## Install
 
